@@ -119,6 +119,8 @@ export default class HTML5Video extends Playback {
       preload: preload || 'metadata',
       controls: (playbackConfig.controls || this.options.useVideoTagDefaultControls) && 'controls',
       crossOrigin: playbackConfig.crossOrigin,
+      muted: this.options.muted,
+      autoplay: this.options.autoPlay,
       'x-webkit-playsinline': playbackConfig.playInline
     })
 

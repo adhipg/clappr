@@ -501,7 +501,7 @@ export default class MediaControl extends UIObject {
   }
 
   hide(delay = 0) {
-    if (!this.isVisible() || (Browser.isMobile && !this.container.isPlaying())) {
+    if (!this.isVisible()) {
       return
     }
     const timeout = delay || 2000
