@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-import {uniqueId, currentScriptUrl} from 'base/utils'
+import {uniqueId, currentScriptUrl} from '../base/utils'
 
-import BaseObject from 'base/base_object'
-import Events from 'base/events'
-import Browser from 'components/browser'
-import CoreFactory from 'components/core_factory'
-import Loader from 'components/loader'
-import PlayerInfo from 'components/player_info'
+import BaseObject from '../base/base_object'
+import Events from '../base/events'
+import Browser from './browser'
+import CoreFactory from './core_factory'
+import Loader from './loader'
+import PlayerInfo from './player_info'
 import $ from 'clappr-zepto'
 
-const baseUrl = currentScriptUrl().replace(/\/[^\/]+$/, '')
+const baseUrl = currentScriptUrl().replace(/\/[^/]+$/, '')
 
 /**
  * @class Player
@@ -94,7 +94,7 @@ export default class Player extends BaseObject {
       onError: Events.PLAYER_ERROR,
       onTimeUpdate: Events.PLAYER_TIMEUPDATE,
       onVolumeUpdate: Events.PLAYER_VOLUMEUPDATE,
-      onTextTrackLoaded: Events.PLAYER_TEXTTRACKLOADED
+      onSubtitleAvailable: Events.PLAYER_SUBTITLE_AVAILABLE
     }
   }
 
@@ -252,7 +252,7 @@ export default class Player extends BaseObject {
       this.listenTo(container, Events.CONTAINER_ERROR, this._onError)
       this.listenTo(container, Events.CONTAINER_TIMEUPDATE, this._onTimeUpdate)
       this.listenTo(container, Events.CONTAINER_VOLUME, this._onVolumeUpdate)
-      this.listenTo(container, Events.CONTAINER_LOADEDTEXTTRACK, this._onTextTrackLoaded)
+      this.listenTo(container, Events.CONTAINER_SUBTITLE_AVAILABLE, this._onSubtitleAvailable)
     }
     return this
   }
@@ -289,8 +289,8 @@ export default class Player extends BaseObject {
     this.trigger(Events.PLAYER_VOLUMEUPDATE, volume)
   }
 
-  _onTextTrackLoaded(evt, data) {
-    this.trigger(Events.PLAYER_TEXTTRACKLOADED, evt, data)
+  _onSubtitleAvailable() {
+    this.trigger(Events.PLAYER_SUBTITLE_AVAILABLE)
   }
 
   _onPlay() {

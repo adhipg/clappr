@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-import {isNumber, Fullscreen, DomRecycler} from 'base/utils'
+import {isNumber, Fullscreen, DomRecycler} from '../../base/utils'
 
-import Events from 'base/events'
-import Styler from 'base/styler'
-import UIObject from 'base/ui_object'
-import Browser from 'components/browser'
-import ContainerFactory from 'components/container_factory'
-import MediaControl from 'components/media_control'
-import Mediator from 'components/mediator'
-import PlayerInfo from 'components/player_info'
+import Events from '../../base/events'
+import Styler from '../../base/styler'
+import UIObject from '../../base/ui_object'
+import Browser from '../../components/browser'
+import ContainerFactory from '../../components/container_factory'
+import MediaControl from '../../components/media_control'
+import Mediator from '../../components/mediator'
+import PlayerInfo from '../../components/player_info'
 
 import $ from 'clappr-zepto'
 
@@ -72,6 +72,7 @@ export default class Core extends UIObject {
     $(document).bind('fullscreenchange', this._boundFullscreenHandler)
     $(document).bind('MSFullscreenChange', this._boundFullscreenHandler)
     $(document).bind('mozfullscreenchange', this._boundFullscreenHandler)
+    Browser.isMobile && $(window).bind('resize', (o) => {this.handleWindowResize(o)})
   }
 
   configureDomRecycler() {
@@ -201,6 +202,17 @@ export default class Core extends UIObject {
     this.trigger(Events.CORE_FULLSCREEN, Fullscreen.isFullscreen())
     this.updateSize()
     this.mediaControl.show()
+  }
+
+  handleWindowResize(event) {
+    let orientation = ($(window).width() > $(window).height()) ? 'landscape' : 'portrait'
+    if (this._screenOrientation === orientation) return
+    this._screenOrientation = orientation
+
+    this.trigger(Events.CORE_SCREEN_ORIENTATION_CHANGED, {
+      event: event,
+      orientation: this._screenOrientation
+    })
   }
 
   setMediaControlContainer(container) {

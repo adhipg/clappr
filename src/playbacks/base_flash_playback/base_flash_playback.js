@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-import Playback from 'base/playback'
-import Styler from 'base/styler'
-import template from 'base/template'
-import Browser from 'components/browser'
+import Playback from '../../base/playback'
+import Styler from '../../base/styler'
+import template from '../../base/template'
+import Browser from '../../components/browser'
 
 import flashHTML from './public/flash.html'
 import flashStyle from './public/flash.scss'
@@ -29,6 +29,7 @@ export default class BaseFlashPlayback extends Playback {
       type: type,
       width: '100%',
       height: '100%',
+      data: this.swfPath,
       'data-flash-playback': this.name
     }
   }
@@ -38,14 +39,8 @@ export default class BaseFlashPlayback extends Playback {
     this.el = element[0]
   }
 
-  _setupFirefox() {
-    const $el = this.$('embed')
-    $el.attr('data-flash-playback', this.name)
-    $el.addClass(this.attributes.class)
-    this.setElement($el)
-  }
-
   render() {
+    this.$el.attr('data', this.swfPath)
     this.$el.html(this.template({
       cid: this.cid,
       swfPath: this.swfPath,
@@ -61,10 +56,6 @@ export default class BaseFlashPlayback extends Playback {
       if (Browser.isLegacyIE) {
         this.$el.attr('classid', IE_CLASSID)
       }
-    }
-
-    if (Browser.isFirefox) {
-      this._setupFirefox()
     }
 
     this.el.id = this.cid

@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-import ContainerPlugin from 'base/container_plugin'
-import Events from 'base/events'
-import Playback from 'base/playback'
+import ContainerPlugin from '../../base/container_plugin'
+import Events from '../../base/events'
+import Playback from '../../base/playback'
 
 export default class ClickToPausePlugin extends ContainerPlugin {
   get name() { return 'click_to_pause' }
@@ -29,9 +29,11 @@ export default class ClickToPausePlugin extends ContainerPlugin {
   }
 
   settingsUpdate() {
-    this.container.$el.removeClass('pointer-enabled')
-    if (this.container.getPlaybackType() !== Playback.LIVE || this.container.isDvrEnabled()) {
-      this.container.$el.addClass('pointer-enabled')
-    }
+    const pointerEnabled = this.container.getPlaybackType() !== Playback.LIVE || this.container.isDvrEnabled()
+    if (pointerEnabled === this.pointerEnabled) return
+
+    const method = pointerEnabled ? 'addClass' : 'removeClass'
+    this.container.$el[method]('pointer-enabled')
+    this.pointerEnabled = pointerEnabled
   }
 }

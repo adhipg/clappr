@@ -5,7 +5,7 @@ var webpack = require('webpack')
 var DirectoryNamedWebpackPlugin = require('directory-named-webpack-plugin')
 
 module.exports = {
-  node: { Buffer: false, global: false, process: true, setImmediate: false },
+  node: { Buffer: false, global: true, process: true, setImmediate: false },
   plugins: [
     new DirectoryNamedWebpackPlugin(true),
     new webpack.DefinePlugin({
@@ -30,7 +30,12 @@ module.exports = {
         include: path.resolve(__dirname, 'src')
       },
       {
-        test: /\.(png|woff|eot|ttf|swf|cur)/, loader: 'url-loader?limit=1'
+        test: /\.(png|woff|eot|ttf|swf|cur)/,
+        loader: 'url-loader',
+        options: {
+          limit: 1,
+          publicPath: '<%=baseUrl%>/'
+        },
       },
       {
         test: /\.svg/, loader: 'svg-inline-loader'
@@ -44,6 +49,9 @@ module.exports = {
     alias: {
       'clappr-zepto': 'clappr-zepto/zepto.js'
     },
-    modules: [path.resolve(__dirname, 'src'), 'node_modules']
+    modules: ['node_modules']
+  },
+  devServer: {
+    disableHostCheck: true, // https://github.com/webpack/webpack-dev-server/issues/882
   }
 }

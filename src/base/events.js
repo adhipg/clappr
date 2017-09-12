@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-import Log from 'plugins/log'
+import Log from '../plugins/log'
 import {uniqueId} from './utils'
-import execOnce from 'lodash.once'
 
 const slice = Array.prototype.slice
 
@@ -84,12 +83,11 @@ export default class Events {
    */
   once(name, callback, context) {
     if (!eventsApi(this, 'once', name, [callback, context]) || !callback) {return this}
-    const self = this
-    const once = execOnce(function() {
-      self.off(name, once)
+    const off = () => this.off(name, once)
+    const once = function() {
+      off(name, once)
       callback.apply(this, arguments)
-    })
-    once._callback = callback
+    }
     return this.on(name, once, context)
   }
 
@@ -167,8 +165,25 @@ export default class Events {
     }
     return this
   }
-}
 
+  static register(eventName) {
+    Events.Custom || (Events.Custom = {})
+    let property = typeof eventName === 'string' && eventName.toUpperCase().trim()
+
+    if(property && !Events.Custom[property]) {
+      Events.Custom[property] = property.toLowerCase().split('_').map(
+        (value, index) => index == 0 ? value : value = (value[0].toUpperCase() + value.slice(1))
+      ).join('')
+    } else {
+      Log.error('Events', 'Error when register event: ' + eventName)
+    }
+  }
+
+  static listAvailableCustomEvents() {
+    Events.Custom || (Events.Custom = {})
+    return Object.keys(Events.Custom).filter((property) => typeof Events.Custom[property] === 'string')
+  }
+}
 
 /**
  * listen to an event indefinitely for a given `obj`
@@ -286,8 +301,12 @@ Events.PLAYER_TIMEUPDATE = 'timeupdate'
  */
 Events.PLAYER_VOLUMEUPDATE = 'volumeupdate'
 
-// TODO doc
-Events.PLAYER_TEXTTRACKLOADED = 'texttrackloaded'
+/**
+ * Fired when subtitle is available
+ *
+ * @event PLAYER_SUBTITLE_AVAILABLE
+ */
+Events.PLAYER_SUBTITLE_AVAILABLE = 'subtitleavailable'
 
 // Playback Events
 /**
@@ -463,6 +482,12 @@ Events.PLAYBACK_PLAY = 'playback:play'
  */
 Events.PLAYBACK_PAUSE = 'playback:pause'
 /**
+ * Fired when the media for a playback is seeked.
+ *
+ * @event PLAYBACK_SEEKED
+ */
+Events.PLAYBACK_SEEKED = 'playback:seeked'
+/**
  * Fired when the media for a playback is stopped.
  *
  * @event PLAYBACK_STOP
@@ -482,10 +507,30 @@ Events.PLAYBACK_STATS_ADD = 'playback:stats:add'
 Events.PLAYBACK_FRAGMENT_LOADED = 'playback:fragment:loaded'
 // TODO doc
 Events.PLAYBACK_LEVEL_SWITCH = 'playback:level:switch'
-// TODO doc
-Events.PLAYBACK_SUBTITLE_LOADED = 'playback:subtitle:loaded'
+/**
+ * Fired when subtitle is available on playback for display
+ *
+ * @event PLAYBACK_SUBTITLE_AVAILABLE
+ */
+Events.PLAYBACK_SUBTITLE_AVAILABLE = 'playback:subtitle:available'
+/**
+ * Fired when playback subtitle track has changed
+ *
+ * @event CONTAINER_SUBTITLE_CHANGED
+ * @param {Object} track Data
+ * track object
+ * @param {Number} [track.id]
+ * selected track id
+ */
+Events.PLAYBACK_SUBTITLE_CHANGED = 'playback:subtitle:changed'
 
-
+// Core Events
+/**
+ * Fired when the containers are created
+ *
+ * @event CORE_CONTAINERS_CREATED
+ */
+Events.CORE_CONTAINERS_CREATED = 'core:containers:created'
 /**
  * Fired when the options were changed for the core
  *
@@ -501,10 +546,24 @@ Events.CORE_READY = 'core:ready'
 /**
  * Fired when the fullscreen state change
  *
+ * @event CORE_FULLSCREEN
  * @param {Boolean} whether or not the player is on fullscreen mode
- * @event CORE_READY
  */
 Events.CORE_FULLSCREEN = 'core:fullscreen'
+/**
+ * Fired when the screen orientation has changed.
+ * This event is trigger only for mobile devices.
+ *
+ * @event CORE_SCREEN_ORIENTATION_CHANGED
+ * @param {Object} screen An object with screen orientation
+ * screen object
+ * @param {Object} [screen.event]
+ * window resize event object
+ * @param {String} [screen.orientation]
+ * screen orientation (ie: 'landscape' or 'portrait')
+ */
+Events.CORE_SCREEN_ORIENTATION_CHANGED = 'core:screen:orientation:changed'
+
 
 // Container Events
 /**
@@ -557,11 +616,21 @@ Events.CONTAINER_ERROR = 'container:error'
 Events.CONTAINER_LOADEDMETADATA = 'container:loadedmetadata'
 
 /**
- * Fired when a text track is loaded and available on container for display
- * 
- * @event CONTAINER_LOADEDTEXTTRACK
+ * Fired when subtitle is available on container for display
+ *
+ * @event CONTAINER_SUBTITLE_AVAILABLE
  */
-Events.CONTAINER_LOADEDTEXTTRACK = 'container:loadedtexttrack'
+Events.CONTAINER_SUBTITLE_AVAILABLE = 'container:subtitle:available'
+/**
+ * Fired when subtitle track has changed
+ *
+ * @event CONTAINER_SUBTITLE_CHANGED
+ * @param {Object} track Data
+ * track object
+ * @param {Number} [track.id]
+ * selected track id
+ */
+Events.CONTAINER_SUBTITLE_CHANGED = 'container:subtitle:changed'
 
 /**
  * Fired when the time is updated on container
@@ -605,6 +674,13 @@ Events.CONTAINER_MOUSE_LEAVE = 'container:mouseleave'
  * @param {Number} time the current time in seconds
  */
 Events.CONTAINER_SEEK = 'container:seek'
+/**
+ * Fired when the container was finished the seek video
+ *
+ * @event CONTAINER_SEEKED
+ * @param {Number} time the current time in seconds
+ */
+Events.CONTAINER_SEEKED = 'container:seeked'
 Events.CONTAINER_VOLUME = 'container:volume'
 Events.CONTAINER_FULLSCREEN = 'container:fullscreen'
 /**
@@ -711,6 +787,3 @@ Events.MEDIACONTROL_NOTPLAYING = 'mediacontrol:notplaying'
  * @event MEDIACONTROL_CONTAINERCHANGED
  */
 Events.MEDIACONTROL_CONTAINERCHANGED = 'mediacontrol:containerchanged'
-
-// Core Events
-Events.CORE_CONTAINERS_CREATED = 'core:containers:created'

@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-import HTML5VideoPlayback from 'playbacks/html5_video'
+import HTML5VideoPlayback from '../../playbacks/html5_video'
 import HLSJS from 'hls.js'
-import Events from 'base/events'
-import Playback from 'base/playback'
-import {now} from 'base/utils'
-import Log from 'plugins/log'
+import Events from '../../base/events'
+import Playback from '../../base/playback'
+import {now} from '../../base/utils'
+import Log from '../../plugins/log'
 
 const AUTO = -1
 
@@ -141,6 +141,8 @@ export default class HLS extends HTML5VideoPlayback {
   }
 
   _setupHls() {
+    this._ccIsSetup = false
+    this._ccTracksUpdated = false
     this._hls = new HLSJS(this.options.playback.hlsjsConfig || {})
     this._hls.on(HLSJS.Events.MEDIA_ATTACHED, () => this._hls.loadSource(this.options.src))
     this._hls.on(HLSJS.Events.LEVEL_LOADED, (evt, data) => this._updatePlaybackType(evt, data))
@@ -149,6 +151,7 @@ export default class HLS extends HTML5VideoPlayback {
     this._hls.on(HLSJS.Events.FRAG_LOADED, (evt, data) => this._onFragmentLoaded(evt, data))
     this._hls.on(HLSJS.Events.ERROR, (evt, data) => this._onHLSJSError(evt, data))
     this._hls.on(HLSJS.Events.SUBTITLE_TRACK_LOADED, (evt, data) => this._onSubtitleLoaded(evt, data))
+    this._hls.on(HLSJS.Events.SUBTITLE_TRACKS_UPDATED, () => this._ccTracksUpdated = true)
     this._hls.attachMedia(this.el)
   }
 
@@ -371,6 +374,11 @@ export default class HLS extends HTML5VideoPlayback {
     this._playbackType = data.details.live ? Playback.LIVE : Playback.VOD
     this._fillLevels()
     this._onLevelUpdated(evt, data)
+
+    // Live stream subtitle tracks detection hack (may not immediately available)
+    if (this._ccTracksUpdated && this._playbackType === Playback.LIVE && this.hasClosedCaptionsTracks) {
+      this._onSubtitleLoaded()
+    }
   }
 
   _fillLevels() {
@@ -513,9 +521,15 @@ export default class HLS extends HTML5VideoPlayback {
     this.trigger(Events.PLAYBACK_FRAGMENT_LOADED, data)
   }
 
-  _onSubtitleLoaded(evt, data) {
-    this.el.textTracks[data.id].mode = 'hidden'
-    this.trigger(Events.PLAYBACK_SUBTITLE_LOADED, evt, data)
+  _onSubtitleLoaded() {
+    // This event may be triggered multiple times
+    // Setup CC only once (disable CC by default)
+    if (!this._ccIsSetup) {
+      this.trigger(Events.PLAYBACK_SUBTITLE_AVAILABLE)
+      const trackId = this._playbackType === Playback.LIVE ? -1 : this.closedCaptionsTrackId
+      this.closedCaptionsTrackId = trackId
+      this._ccIsSetup = true
+    }
   }
 
   _onLevelSwitch(evt, data) {

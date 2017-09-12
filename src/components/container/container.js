@@ -6,9 +6,9 @@
  * Container is responsible for the video rendering and state
  */
 
-import Events from 'base/events'
-import UIObject from 'base/ui_object'
-import Styler from 'base/styler'
+import Events from '../../base/events'
+import UIObject from '../../base/ui_object'
+import Styler from '../../base/styler'
 import style from './public/style.scss'
 import $ from 'clappr-zepto'
 
@@ -67,6 +67,42 @@ export default class Container extends UIObject {
    */
   get i18n() {
     return this._i18n
+  }
+
+  /**
+   * checks if has closed caption tracks.
+   * @property hasClosedCaptionsTracks
+   * @type {Boolean}
+   */
+  get hasClosedCaptionsTracks() {
+    return this.playback.hasClosedCaptionsTracks
+  }
+
+  /**
+   * gets the available closed caption tracks.
+   * @property closedCaptionsTracks
+   * @type {Array} an array of objects with at least 'id' and 'name' properties
+   */
+  get closedCaptionsTracks() {
+    return this.playback.closedCaptionsTracks
+  }
+
+  /**
+   * gets the selected closed caption track index. (-1 is disabled)
+   * @property closedCaptionsTrackId
+   * @type {Number}
+   */
+  get closedCaptionsTrackId() {
+    return this.playback.closedCaptionsTrackId
+  }
+
+  /**
+   * sets the selected closed caption track index. (-1 is disabled)
+   * @property closedCaptionsTrackId
+   * @type {Number}
+   */
+  set closedCaptionsTrackId(trackId) {
+    this.playback.closedCaptionsTrackId = trackId
   }
 
   /**
@@ -130,16 +166,22 @@ export default class Container extends UIObject {
     this.listenTo(this.playback, Events.PLAYBACK_DVR, this.playbackDvrStateChanged)
     this.listenTo(this.playback, Events.PLAYBACK_MEDIACONTROL_DISABLE, this.disableMediaControl)
     this.listenTo(this.playback, Events.PLAYBACK_MEDIACONTROL_ENABLE, this.enableMediaControl)
+    this.listenTo(this.playback, Events.PLAYBACK_SEEKED, this.onSeeked)
     this.listenTo(this.playback, Events.PLAYBACK_ENDED, this.onEnded)
     this.listenTo(this.playback, Events.PLAYBACK_PLAY, this.playing)
     this.listenTo(this.playback, Events.PLAYBACK_PAUSE, this.paused)
     this.listenTo(this.playback, Events.PLAYBACK_STOP, this.stopped)
     this.listenTo(this.playback, Events.PLAYBACK_ERROR, this.error)
-    this.listenTo(this.playback, Events.PLAYBACK_SUBTITLE_LOADED, this.subtitleLoaded)
+    this.listenTo(this.playback, Events.PLAYBACK_SUBTITLE_AVAILABLE, this.subtitleAvailable)
+    this.listenTo(this.playback, Events.PLAYBACK_SUBTITLE_CHANGED, this.subtitleChanged)
   }
 
-  subtitleLoaded(evt, data) {
-    this.trigger(Events.CONTAINER_LOADEDTEXTTRACK, evt, data)
+  subtitleAvailable() {
+    this.trigger(Events.CONTAINER_SUBTITLE_AVAILABLE)
+  }
+
+  subtitleChanged(track) {
+    this.trigger(Events.CONTAINER_SUBTITLE_CHANGED, track)
   }
 
   playbackStateChanged(state) {
@@ -305,6 +347,10 @@ export default class Container extends UIObject {
   seek(time) {
     this.trigger(Events.CONTAINER_SEEK, time, this.name)
     this.playback.seek(time)
+  }
+
+  onSeeked() {
+    this.trigger(Events.CONTAINER_SEEKED, this.name)
   }
 
   seekPercentage(percentage) {

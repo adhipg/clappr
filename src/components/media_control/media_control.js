@@ -6,31 +6,30 @@
  * The MediaControl is responsible for displaying the Player controls.
  */
 
-import {Config, Fullscreen, formatTime, extend, removeArrayItem} from 'base/utils'
-import {Kibo} from 'vendor'
+import {Config, Fullscreen, formatTime, extend, removeArrayItem} from '../../base/utils'
+import {Kibo} from '../../vendor'
 
-import Events from 'base/events'
-import Styler from 'base/styler'
-import UIObject from 'base/ui_object'
-import Browser from 'components/browser'
-import Mediator from 'components/mediator'
-import template from 'base/template'
-import Playback from 'base/playback'
+import Events from '../../base/events'
+import Styler from '../../base/styler'
+import UIObject from '../../base/ui_object'
+import Browser from '../../components/browser'
+import Mediator from '../../components/mediator'
+import template from '../../base/template'
+import Playback from '../../base/playback'
 
 import $ from 'clappr-zepto'
 
 import mediaControlStyle from './public/media-control.scss'
 import mediaControlHTML from './public/media-control.html'
 
-import playIcon from 'icons/01-play.svg'
-import pauseIcon from 'icons/02-pause.svg'
-import stopIcon from 'icons/03-stop.svg'
-import volumeIcon from 'icons/04-volume.svg'
-import volumeMuteIcon from 'icons/05-mute.svg'
-import fullscreenIcon from 'icons/06-expand.svg'
-import exitFullscreenIcon from 'icons/07-shrink.svg'
-import hdIcon from 'icons/08-hd.svg'
-import ccIcon from 'icons/09-cc.svg'
+import playIcon from '../../icons/01-play.svg'
+import pauseIcon from '../../icons/02-pause.svg'
+import stopIcon from '../../icons/03-stop.svg'
+import volumeIcon from '../../icons/04-volume.svg'
+import volumeMuteIcon from '../../icons/05-mute.svg'
+import fullscreenIcon from '../../icons/06-expand.svg'
+import exitFullscreenIcon from '../../icons/07-shrink.svg'
+import hdIcon from '../../icons/08-hd.svg'
 
 export default class MediaControl extends UIObject {
   get name() { return 'MediaControl' }
@@ -54,7 +53,6 @@ export default class MediaControl extends UIObject {
       'click .bar-container[data-seekbar]': 'seek',
       'click .bar-container[data-volume]': 'onVolumeClick',
       'click .drawer-icon[data-volume]': 'toggleMute',
-      'click [data-cc-button]': 'toggleClosedCaptions',
       'mouseenter .drawer-container[data-volume]': 'showVolumeBar',
       'mouseleave .drawer-container[data-volume]': 'hideVolumeBar',
       'mousedown .bar-container[data-volume]': 'startVolumeDrag',
@@ -121,7 +119,6 @@ export default class MediaControl extends UIObject {
       this.listenTo(this.container, Events.CONTAINER_SETTINGSUPDATE, this.settingsUpdate)
       this.listenTo(this.container, Events.CONTAINER_PLAYBACKDVRSTATECHANGED, this.settingsUpdate)
       this.listenTo(this.container, Events.CONTAINER_HIGHDEFINITIONUPDATE, this.highDefinitionUpdate)
-      this.listenTo(this.container, Events.CONTAINER_LOADEDTEXTTRACK, this.ccAvailable.bind(this, true))
       this.listenTo(this.container, Events.CONTAINER_MEDIACONTROL_DISABLE, this.disable)
       this.listenTo(this.container, Events.CONTAINER_MEDIACONTROL_ENABLE, this.enable)
       this.listenTo(this.container, Events.CONTAINER_ENDED, this.ended)
@@ -252,16 +249,6 @@ export default class MediaControl extends UIObject {
     this.$el.removeClass('w320')
     if (size.width <= 320 || this.options.hideVolumeBar) {
       this.$el.addClass('w320')
-    }
-  }
-
-  toggleClosedCaptions() {
-    if (this.container.playback.el.textTracks[0].mode === 'showing') {
-      this.container.playback.el.textTracks[0].mode = 'hidden'
-      this.$ccButton.removeClass('enabled')
-    } else {
-      this.container.playback.el.textTracks[0].mode = 'showing'
-      this.$ccButton.addClass('enabled')
     }
   }
 
@@ -534,17 +521,12 @@ export default class MediaControl extends UIObject {
   }
 
   getSettings() {
-    return $.extend({}, this.container.settings)
+    return $.extend(true, {}, this.container.settings)
   }
 
   highDefinitionUpdate(isHD) {
     const method = isHD ? 'addClass' : 'removeClass'
     this.$hdIndicator[method]('enabled')
-  }
-
-  ccAvailable(hasCC) {
-    const method = hasCC ? 'addClass' : 'removeClass'
-    this.$ccButton[method]('available')
   }
 
   createCachedElements() {
@@ -566,7 +548,6 @@ export default class MediaControl extends UIObject {
     this.$volumeBarFill = this.$el.find('.bar-fill-1[data-volume]')
     this.$volumeBarScrubber = this.$el.find('.bar-scrubber[data-volume]')
     this.$hdIndicator = this.$el.find('button.media-control-button[data-hd-indicator]')
-    this.$ccButton = this.$el.find('button.media-control-button[data-cc-button]')
     this.resetIndicators()
     this.initializeIcons()
   }
@@ -586,7 +567,6 @@ export default class MediaControl extends UIObject {
     this.$volumeIcon.append(volumeIcon)
     this.$fullscreenToggle.append(fullscreenIcon)
     this.$hdIndicator.append(hdIcon)
-    this.$ccButton.append(ccIcon)
   }
 
   setSeekPercentage(value) {
@@ -685,8 +665,14 @@ export default class MediaControl extends UIObject {
       this.hide()
     }
 
+    // Video volume cannot be changed with Safari on mobile devices
+    // Display mute/unmute icon only if Safari version >= 10
     if(Browser.isSafari && Browser.isMobile) {
-      this.$volumeContainer.css('display','none')
+      if (Browser.version < 10) {
+        this.$volumeContainer.css('display','none')
+      } else {
+        this.$volumeBarContainer.css('display','none')
+      }
     }
 
     this.$seekBarPosition.addClass('media-control-notransition')
@@ -712,7 +698,6 @@ export default class MediaControl extends UIObject {
 
     this.parseColors()
     this.highDefinitionUpdate()
-    this.ccAvailable(false)
 
     this.rendered = true
     this.updateVolumeUI()
